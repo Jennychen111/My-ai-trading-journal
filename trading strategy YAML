@@ -1,0 +1,53 @@
+# ======================================================
+# 交易策略：商品與指數波動過濾系統 (1H 雙向 - 台灣時區優化)
+# 適用時區：UTC+8 (台灣) 08:00 - 24:00
+# ======================================================
+
+metadata:
+  strategy_name: "Taiwan Hours Trend Master"
+  timeframe: "1h"               
+  trading_style: "Intraday (Strictly)"
+  operating_hours: "08:00 - 00:00 (TPE)" # 24:00 準時強制平倉
+
+# ------------------------------------------------------
+# 執行時段指南 (Execution Windows)
+# ------------------------------------------------------
+market_sessions:
+  asia_session (08:00-15:00): 
+    action: "Watch Only"
+    note: "通常波動度 (ATR) 低於門檻，建議觀察不交易，避免被洗盤。"
+  europe_session (15:00-21:00): 
+    action: "Active"
+    note: "黃金、石油開始發動，適合尋找第一次 Supertrend 轉換訊號。"
+  us_session_early (21:30-00:00): 
+    action: "Highly Active"
+    note: "動能最強。若 RSI 回調滿足且 ATR 暴增，是當天最後的進場機會。"
+
+# ------------------------------------------------------
+# 指標與規則 (同加強版，但加入時間限制)
+# ------------------------------------------------------
+indicators:
+  trend_filter: { type: "EMA", period: 200 }
+  pullback_ref: { type: "EMA", period: 50 }
+  direction:    { type: "Supertrend", params: [10, 3.0] }
+  entry_rsi:    { type: "RSI", period: 14, levels: [40, 52, 48, 60] }
+  volatility:   { type: "ATR", period: 14, threshold: "1.2 * MA(ATR, 20)" }
+
+rules:
+  entry_logic:
+    - all_indicators_confluence: true
+    - time_restriction: "Must enter before 22:30 (TPE)" # 22:30 後不新開倉，留空間平倉
+  
+  exit_logic:
+    - stop_loss: "Supertrend Line"
+    - time_exit_trigger: "23:50 (TPE)" # 晚上 11:50 無論賺賠，手動全平倉
+    - sleeping_rule: "No positions held overnight"
+
+# ------------------------------------------------------
+# 針對你的作息備註 (Personal Notes)
+# ------------------------------------------------------
+notes: |
+  1. 早上 (08:00 - 12:00)：通常 ATR 很低，你的系統會通知「不符合條件」。這很正常，請去忙你的事。
+  2. 下午 (15:00 - 18:00)：這段時間最容易出現高品質的 RSI 回調。
+  3. 晚上 (21:30)：美股開盤波動極大，如果 Supertrend 劇烈變色，先觀察 15 分鐘，確保 ATR 穩定再進場。
+  4. 止損防禦：因為你 24:00 睡覺，進場後務必設定好「硬止損」(Hard Stop)，即使你睡著了系統也會幫你結算。
