@@ -1,0 +1,51 @@
+strategy_metadata:
+  name: "Global_Macro_1H_BiDirectional_Shield"
+  version: "2.0"
+  description: "雙向波段策略：Supertrend 定向，RSI 避開極端區，ATR 動態止損。"
+
+trading_parameters:
+  timeframe: "1H" # 核心交易週期
+  risk_reward_ratio: 2.0 # 鎖定盈虧比 1:2 (大賺小賠的數學基礎)
+  check_frequency: "每小時整點收盤前確認" # 非隨時盯盤，僅整點確認
+
+indicators:
+  trend:
+    name: "Supertrend"
+    params: 
+      period: 10
+      multiplier: "3.0 (標配)" # 建議：黃金可調至 4.0，外匯可調至 2.5
+  oscillator:
+    name: "RSI"
+    params: { period: 14 }
+    thresholds:
+      long_max_rsi: 65  # 高於 65 不追多
+      short_min_rsi: 35 # 低於 35 不追空
+  volatility:
+    name: "ATR"
+    params: { period: 14 }
+    stop_multiplier: 2.0 # 初始止損距設為 2 倍 ATR
+
+strategy_logic:
+  # 做多邏輯 (Long)
+  long_entry:
+    conditions:
+      - "價格收盤 > Supertrend 線 (轉綠色趨勢)"
+      - "RSI < 65 (防追高)"
+    initial_stop_loss: "進場價 - (2 * ATR)"
+    trailing_stop: "跟隨 Supertrend 綠線即時上移"
+
+  # 做空邏輯 (Short)
+  short_entry:
+    conditions:
+      - "價格收盤 < Supertrend 線 (轉紅色趨勢)"
+      - "RSI > 35 (防追低)"
+    initial_stop_loss: "進場價 + (2 * ATR)"
+    trailing_stop: "跟隨 Supertrend 紅線即時下移"
+
+  exit_rules:
+    take_profit: "當獲利達到停損金額的 2 倍時 (TP = 2 * Risk)"
+    trend_flip: "當 Supertrend 顏色反轉 (多轉空或空轉多) 時，立即平倉"
+
+risk_management:
+  max_risk_per_trade: "2% of Account" # 每次賠錢上限為總本金 2% (穩穩賺的關鍵)
+  position_sizing: "根據 ATR 計算手數 (波動大則手數小，波動小則手數大)"
